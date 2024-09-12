@@ -68,13 +68,15 @@ const AddQuestionForm: React.FC = () => {
     const [expanded, setExpanded] = useState<string | false>(false);
 
     const handleAddQuestionClick = () => {
-        setQuestionTitle("");
-        setQuestionType("");
-        setIsRequired(false);
-        setHelperText("");
-        setAdditionalFields({});
-        setShowForm(true);
-        setExpanded(false); // Ensure no accordion is expanded when adding a new question
+        if (questions.length !== 0 || !error) {
+            setQuestionTitle("");
+            setQuestionType("");
+            setIsRequired(false);
+            setHelperText("");
+            setAdditionalFields({});
+            setShowForm(true);
+            setExpanded(false); // Ensure no accordion is expanded when adding a new question
+        }
     };
 
     const handleAdditionalFields = (field: string, value: any) => {
