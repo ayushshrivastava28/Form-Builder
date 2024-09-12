@@ -66,7 +66,6 @@ const AddQuestionForm: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
     const [expanded, setExpanded] = useState<string | false>(false);
-    const [isNewQuestion, setIsNewQuestion] = useState<boolean>(false);
 
     const handleAddQuestionClick = () => {
         setQuestionTitle("");
@@ -75,7 +74,6 @@ const AddQuestionForm: React.FC = () => {
         setHelperText("");
         setAdditionalFields({});
         setShowForm(true);
-        setIsNewQuestion(true);
         setExpanded(false); // Ensure no accordion is expanded when adding a new question
     };
 
@@ -90,7 +88,13 @@ const AddQuestionForm: React.FC = () => {
     };
 
     const handleSaveChanges = () => {
-        if (isNewQuestion) {
+        if (questionTitle.trim() === "" || questionType.trim() === "") {
+            setError("Please fill in all required fields.");
+            return;
+        }
+
+        if (expanded === false) {
+            // Creating a new question
             const newQuestion: Question = {
                 id: uuidv4(),
                 title: questionTitle,
@@ -100,8 +104,9 @@ const AddQuestionForm: React.FC = () => {
                 additionalFields,
             };
             setQuestions([...questions, newQuestion]);
-            setIsNewQuestion(false);
+            setSuccessMessage("Question added successfully.");
         } else {
+            // Updating an existing question
             const updatedQuestions = questions.map((q) =>
                 q.id === expanded
                     ? {
@@ -115,10 +120,11 @@ const AddQuestionForm: React.FC = () => {
                     : q
             );
             setQuestions(updatedQuestions);
+            setSuccessMessage("Question updated successfully.");
         }
         saveToLocalStorage(questions);
-        setExpanded(false); // Close accordion after saving
         setShowForm(false);
+        setExpanded(false); // Close accordion after saving
     };
 
     const handleAccordionChange = (id: string = "") => (event: React.SyntheticEvent, isExpanded: boolean) => {
@@ -131,16 +137,23 @@ const AddQuestionForm: React.FC = () => {
                 setIsRequired(questionToEdit.required);
                 setHelperText(questionToEdit.helperText || "");
                 setAdditionalFields(questionToEdit.additionalFields || {});
+                setShowForm(false);
             }
         } else {
             handleSaveChanges(); // Save changes when the accordion is collapsed
-            setExpanded(false); // Collapse accordion
         }
     };
 
     useEffect(() => {
-        if (questions.length === 0) setExpanded(false)
-    }, [questions])
+        if (questions.length === 0) {
+            setQuestionTitle("");
+            setQuestionType("");
+            setIsRequired(false);
+            setHelperText("");
+            setAdditionalFields({});
+            setExpanded(false);
+        };
+    }, [questions]);
 
     return (
         <Box>
@@ -266,9 +279,13 @@ const AddQuestionForm: React.FC = () => {
                 {(showForm || !questions.length) && (
                     <Accordion
                         expanded={true}
-                        onChange={handleAccordionChange()}
+                        onChange={handleSaveChanges}
                         sx={{ marginBottom: 2 }}
                     >
+                        <AccordionSummary
+                            expandIcon={<ExpandMoreIcon />}
+                            sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                        </AccordionSummary>
                         <AccordionDetails>
                             <Box>
                                 <TextField
@@ -342,45 +359,27 @@ const AddQuestionForm: React.FC = () => {
                                     }
                                     label="Required"
                                 />
-                                <Button variant="contained" onClick={handleSaveChanges}>
-                                    Save Question
-                                </Button>
                             </Box>
                         </AccordionDetails>
                     </Accordion>
                 )}
             </Box>
             {!expanded && (
-                <Button variant="contained" onClick={handleAddQuestionClick}>
+                <Button variant="contained" onClick={handleAddQuestionClick} sx={{ marginTop: 2 }}>
                     Add Question
-                </Button>)}
-            {successMessage && (
-                <Snackbar
-                    open={Boolean(successMessage)}
-                    autoHideDuration={6000}
-                    onClose={() => setSuccessMessage(null)}
-                >
-                    <Alert
-                        onClose={() => setSuccessMessage(null)}
-                        severity="success"
-                        sx={{ width: "100%" }}
-                    >
-                        {successMessage}
+                </Button>
+            )}
+            {error && (
+                <Snackbar open={Boolean(error)} autoHideDuration={6000} onClose={() => setError(null)}>
+                    <Alert onClose={() => setError(null)} severity="error">
+                        {error}
                     </Alert>
                 </Snackbar>
             )}
-            {error && (
-                <Snackbar
-                    open={Boolean(error)}
-                    autoHideDuration={6000}
-                    onClose={() => setError(null)}
-                >
-                    <Alert
-                        onClose={() => setError(null)}
-                        severity="error"
-                        sx={{ width: "100%" }}
-                    >
-                        {error}
+            {successMessage && (
+                <Snackbar open={Boolean(successMessage)} autoHideDuration={6000} onClose={() => setSuccessMessage(null)}>
+                    <Alert onClose={() => setSuccessMessage(null)} severity="success">
+                        {successMessage}
                     </Alert>
                 </Snackbar>
             )}
